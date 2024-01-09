@@ -1,4 +1,5 @@
 # Reference: https://github.com/IDEA-Research/Grounded-Segment-Anything
+import os
 
 from typing import Dict, List
 import numpy as np
@@ -13,7 +14,8 @@ try:
 except ImportError:
     # not sure why this happens sometimes
     from GroundingDINO.groundingdino.util.inference import Model as GroundingDINOModel
-from segment_anything import sam_model_registry, SamPredictor
+
+from segment_anything import sam_model_registry, sam_hq_model_registry, SamPredictor
 from deva.ext.MobileSAM.setup_mobile_sam import setup_model as setup_mobile_sam
 import numpy as np
 import torch
@@ -21,32 +23,129 @@ import torch
 from deva.inference.object_info import ObjectInfo
 
 
-def get_grounding_dino_model(config: Dict, device: str) -> (GroundingDINOModel, SamPredictor):
-    GROUNDING_DINO_CONFIG_PATH = config['GROUNDING_DINO_CONFIG_PATH']
-    GROUNDING_DINO_CHECKPOINT_PATH = config['GROUNDING_DINO_CHECKPOINT_PATH']
 
-    gd_model = GroundingDINOModel(model_config_path=GROUNDING_DINO_CONFIG_PATH,
+def get_parent_folder_of_package(package_name):
+    # Import the package
+    package = __import__(package_name)
+
+    # Get the absolute path of the imported package
+    package_path = os.path.abspath(package.__file__)
+
+    # Get the directory of the package
+    package_dir = os.path.dirname(package_path)
+
+    # Get the parent directory
+    parent_dir = os.path.dirname(package_dir)
+
+    return parent_dir
+
+PARENT_FOLDER = get_parent_folder_of_package('deva')
+
+def get_grounding_dino_model(config: Dict, device: str) -> (GroundingDINOModel, SamPredictor):
+    try:
+        GROUNDING_DINO_CONFIG_PATH = config['GROUNDING_DINO_CONFIG_PATH']
+        GROUNDING_DINO_CHECKPOINT_PATH = config['GROUNDING_DINO_CHECKPOINT_PATH']
+        gd_model = GroundingDINOModel(model_config_path=GROUNDING_DINO_CONFIG_PATH,
                                   model_checkpoint_path=GROUNDING_DINO_CHECKPOINT_PATH,
                                   device=device)
+    except:
+        GROUNDING_DINO_CONFIG_PATH = os.path.join(PARENT_FOLDER, config['GROUNDING_DINO_CONFIG_PATH'])
+        GROUNDING_DINO_CHECKPOINT_PATH = os.path.join(PARENT_FOLDER, config['GROUNDING_DINO_CHECKPOINT_PATH'])
+        gd_model = GroundingDINOModel(model_config_path=GROUNDING_DINO_CONFIG_PATH,
+                                  model_checkpoint_path=GROUNDING_DINO_CHECKPOINT_PATH,
+                                  device=device)
+
 
     # Building SAM Model and SAM Predictor
     variant = config['sam_variant'].lower()
     if variant == 'mobile':
-        MOBILE_SAM_CHECKPOINT_PATH = config['MOBILE_SAM_CHECKPOINT_PATH']
+        try:
+            MOBILE_SAM_CHECKPOINT_PATH = config['MOBILE_SAM_CHECKPOINT_PATH']
+            checkpoint = torch.load(MOBILE_SAM_CHECKPOINT_PATH)
+        except:
+            MOBILE_SAM_CHECKPOINT_PATH = os.path.join(PARENT_FOLDER, config['MOBILE_SAM_CHECKPOINT_PATH'])
+            checkpoint = torch.load(MOBILE_SAM_CHECKPOINT_PATH)
 
         # Building Mobile SAM model
-        checkpoint = torch.load(MOBILE_SAM_CHECKPOINT_PATH)
         mobile_sam = setup_mobile_sam()
         mobile_sam.load_state_dict(checkpoint, strict=True)
         mobile_sam.to(device=device)
         sam = SamPredictor(mobile_sam)
     elif variant == 'original':
         SAM_ENCODER_VERSION = config['SAM_ENCODER_VERSION']
-        SAM_CHECKPOINT_PATH = config['SAM_CHECKPOINT_PATH']
-
-        sam = sam_model_registry[SAM_ENCODER_VERSION](checkpoint=SAM_CHECKPOINT_PATH).to(
-            device=device)
+        try:
+            SAM_CHECKPOINT_PATH = config['SAM_CHECKPOINT_PATH']
+            sam = sam_model_registry[SAM_ENCODER_VERSION](checkpoint=SAM_CHECKPOINT_PATH).to(
+                device=device)
+        except:
+            SAM_CHECKPOINT_PATH = os.path.join(PARENT_FOLDER, config['SAM_CHECKPOINT_PATH'])
+            sam = sam_model_registry[SAM_ENCODER_VERSION](checkpoint=SAM_CHECKPOINT_PATH).to(
+                device=device)
+        
         sam = SamPredictor(sam)
+    
+
+    elif variant == 'hq':
+        SAM_ENCODER_VERSION = config['SAM_ENCODER_VERSION']
+
+        # from segment_anything_hq import sam_model_registry_hq
+
+
+        assert config['SAM_ENCODER_VERSION'] == "vit_h"
+        # HQSAM_CHECKPOINT_PATH = config['HQSAM_CHECKPOINT_PATH']
+        SAM_CHECKPOINT_PATH = "/juno/u/ziangcao/Juno_CodeBase/IPRL_codeBase/Vision_Pipeline/mm-lfd/mm_lfd/Vision_module/utils/Customized_DEVA/saves/sam_hq_vit_h.pth"
+        
+        sam = sam_hq_model_registry[SAM_ENCODER_VERSION](checkpoint=SAM_CHECKPOINT_PATH).to(
+                device=device)
+        
+        sam = SamPredictor(sam)
+        # exit("HQ is not supported yet")
+
+    elif variant == 'sam_fast':
+        # from segment_anything_fast import sam_model_fast_registry, SamAutomaticMaskGenerator, SamPredictor
+        from segment_anything_fast import sam_model_fast_registry, SamAutomaticMaskGenerator
+
+
+        # NOT USEFULL AT ALL!!!
+        # import torch._dynamo
+        # torch._dynamo.config.suppress_errors = True
+        
+        assert config['SAM_ENCODER_VERSION'] == "vit_h"
+
+        SAM_ENCODER_VERSION = config['SAM_ENCODER_VERSION']
+        try:
+            SAM_CHECKPOINT_PATH = config['SAM_CHECKPOINT_PATH']
+            # Change to sam_model_fast_registry
+            sam = sam_model_fast_registry[SAM_ENCODER_VERSION](checkpoint=SAM_CHECKPOINT_PATH).to(
+                device=device)
+        except:
+            SAM_CHECKPOINT_PATH = os.path.join(PARENT_FOLDER, config['SAM_CHECKPOINT_PATH'])
+            # Change to sam_model_fast_registry
+            sam = sam_model_fast_registry[SAM_ENCODER_VERSION](checkpoint=SAM_CHECKPOINT_PATH).to(
+                device=device)
+        
+        sam = SamPredictor(sam)
+
+        # sam = SamAutomaticMaskGenerator(sam, process_batch_size=8)
+
+
+        
+    # elif variant == 'HQ':
+    #     print("Use Large vit ---------------")
+    #     # from segment_anything_hq import sam_model_registry
+    #     # model_type = "<model_type>" #"vit_l/vit_b/vit_h/vit_tiny"
+    #     # sam_checkpoint = "<path/to/checkpoint>"
+    #     model_type = "vit_h"
+    #     HQSAM_CHECKPOINT_PATH = os.path.join(HOME_SAM, f"EfficientSAM/sam_hq_{model_type}.pth")
+    #     # hqsam = sam_model_registry[model_type](checkpoint=HQSAM_CHECKPOINT_PATH).to(device=DEVICE)
+    #     # sam_predictor = SamPredictor(hqsam)
+    #     prefix = "HQ"
+    # elif args.SAM_Type == "HQ_Tiny":
+    #     model_type = "vit_tiny"
+    #     HQSAM_CHECKPOINT_PATH = os.path.join(HOME_SAM, f"EfficientSAM/sam_hq_{model_type}.pth")
+
+    #     prefix = "HQ"
+
 
     return gd_model, sam
 
@@ -74,6 +173,11 @@ def segment_with_text(config: Dict, gd_model: GroundingDINOModel, sam: SamPredic
                                                classes=prompts,
                                                box_threshold=BOX_THRESHOLD,
                                                text_threshold=TEXT_THRESHOLD)
+
+    ######## NOTE: This is a hack to remove the detections that exceed the 90% of image size ########
+    # Remove the detections that exceed the 90% of image size
+    detections = detections[detections.area < 0.9 * image.shape[0] * image.shape[1]]
+
 
     nms_idx = torchvision.ops.nms(torch.from_numpy(detections.xyxy),
                                   torch.from_numpy(detections.confidence),
