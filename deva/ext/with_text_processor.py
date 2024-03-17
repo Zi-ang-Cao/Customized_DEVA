@@ -135,6 +135,7 @@ def process_frame_with_text(deva: DEVAInferenceCore,
 
 
 
+# Wrapped into a class?
 
 @torch.inference_mode()
 def refined_processor_with_text(deva: DEVAInferenceCore,
@@ -158,15 +159,8 @@ def refined_processor_with_text(deva: DEVAInferenceCore,
     need_resize = new_min_side > 0
     image = get_input_frame_for_deva(image_np, new_min_side)
 
-    frame_info = FrameInfo(image, None, None, ti, {
-        'frame': ["refined_processor_with_text_NULL_FRAME_NAME"],
-        'shape': [h, w],
-    })
-
-
     if cfg['temporal_setting'] == 'semionline':
         raise NotImplementedError
-
     elif cfg['temporal_setting'] == 'online':
         # FOR MM_LFD, USE THIS Branch ONLY!!!!
 
@@ -174,7 +168,6 @@ def refined_processor_with_text(deva: DEVAInferenceCore,
             # incorporate new detections
             mask, segments_info = make_segmentation_with_text(cfg, image_np, gd_model, sam_model,
                                                               prompts, new_min_side)
-            frame_info.segments_info = segments_info
             prob = deva.incorporate_detection(image, mask, segments_info)
 
             # seg = parsed_img
@@ -195,6 +188,12 @@ def refined_processor_with_text(deva: DEVAInferenceCore,
         if obj_ids is None:
             # cared_prompt_ids = list(range(len(prompts)))
             obj_ids = np.unique(index_mask)[1:]    # 0 is the background
+        
+        # prompts = []
+        # for info in segments_info:
+        #     if info.category_ids[0] in [0, 1]: 
+        #         print("obj_ids", obj_ids)
+
             
         seg = np.isin(index_mask, obj_ids).astype(np.uint8) * 255
         seg = np.repeat(seg[:, :, None], 3, axis=-1)

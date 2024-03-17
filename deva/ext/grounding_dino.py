@@ -86,11 +86,9 @@ def get_grounding_dino_model(config: Dict, device: str) -> (GroundingDINOModel, 
     
 
     elif variant == 'hq':
+        print("Use HQ SAM!!!!!!! ---------------")
         SAM_ENCODER_VERSION = config['SAM_ENCODER_VERSION']
-
         # from segment_anything_hq import sam_model_registry_hq
-
-
         assert config['SAM_ENCODER_VERSION'] == "vit_h"
         # HQSAM_CHECKPOINT_PATH = config['HQSAM_CHECKPOINT_PATH']
         SAM_CHECKPOINT_PATH = "/juno/u/ziangcao/Juno_CodeBase/IPRL_codeBase/Vision_Pipeline/mm-lfd/mm_lfd/Vision_module/utils/Customized_DEVA/saves/sam_hq_vit_h.pth"
@@ -193,7 +191,7 @@ def segment_with_text(config: Dict, gd_model: GroundingDINOModel, sam: SamPredic
         index = np.argmax(scores)
         result_masks.append(masks[index])
 
-    detections.mask = np.array(result_masks)
+    detections.mask = np.array(result_masks)    # list of masks, [(H, W), (H, W), ...)]
 
     h, w = image.shape[:2]
     if min_side > 0:

@@ -225,11 +225,13 @@ class DEVAInferenceCore:
             image_ti = self.curr_ti
 
         image, self.pad = pad_divide_by(image, 16)
-        image = image.unsqueeze(0)  # add the batch dimension
+        image = image.unsqueeze(0)  # add the batch dimension --> (1, 3, H, W)
 
         is_mem_frame = ((self.curr_ti - self.last_mem_ti >= self.mem_every) or
                         (mask is not None)) and (not end)
         # segment when there is no input mask or when the input mask is incomplete
+        # E.g. There is no input mask for the first frame!
+            #  The input mask is incomplete for the last frame?
         need_segment = (mask is None) or (not self.object_manager.has_all(objects)
                                           and self.object_manager.num_obj > 0)
 
