@@ -99,7 +99,7 @@ class ResultSaver:
             prob = F.interpolate(prob.unsqueeze(1), shape, mode='bilinear', align_corners=False)[:,
                                                                                                  0]
         # Probability mask -> index mask
-        mask = torch.argmax(prob, dim=0)
+        mask = torch.argmax(prob, dim=0)    # (H, W), either 0 or 1 - n (for n objects)
 
         args = ResultArgs(
             saver=self,

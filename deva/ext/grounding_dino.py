@@ -86,11 +86,9 @@ def get_grounding_dino_model(config: Dict, device: str) -> (GroundingDINOModel, 
     
 
     elif variant == 'hq':
+        print("Use HQ SAM!!!!!!! ---------------")
         SAM_ENCODER_VERSION = config['SAM_ENCODER_VERSION']
-
         # from segment_anything_hq import sam_model_registry_hq
-
-
         assert config['SAM_ENCODER_VERSION'] == "vit_h"
         # HQSAM_CHECKPOINT_PATH = config['HQSAM_CHECKPOINT_PATH']
         SAM_CHECKPOINT_PATH = "/juno/u/ziangcao/Juno_CodeBase/IPRL_codeBase/Vision_Pipeline/mm-lfd/mm_lfd/Vision_module/utils/Customized_DEVA/saves/sam_hq_vit_h.pth"
@@ -125,27 +123,6 @@ def get_grounding_dino_model(config: Dict, device: str) -> (GroundingDINOModel, 
                 device=device)
         
         sam = SamPredictor(sam)
-
-        # sam = SamAutomaticMaskGenerator(sam, process_batch_size=8)
-
-
-        
-    # elif variant == 'HQ':
-    #     print("Use Large vit ---------------")
-    #     # from segment_anything_hq import sam_model_registry
-    #     # model_type = "<model_type>" #"vit_l/vit_b/vit_h/vit_tiny"
-    #     # sam_checkpoint = "<path/to/checkpoint>"
-    #     model_type = "vit_h"
-    #     HQSAM_CHECKPOINT_PATH = os.path.join(HOME_SAM, f"EfficientSAM/sam_hq_{model_type}.pth")
-    #     # hqsam = sam_model_registry[model_type](checkpoint=HQSAM_CHECKPOINT_PATH).to(device=DEVICE)
-    #     # sam_predictor = SamPredictor(hqsam)
-    #     prefix = "HQ"
-    # elif args.SAM_Type == "HQ_Tiny":
-    #     model_type = "vit_tiny"
-    #     HQSAM_CHECKPOINT_PATH = os.path.join(HOME_SAM, f"EfficientSAM/sam_hq_{model_type}.pth")
-
-    #     prefix = "HQ"
-
 
     return gd_model, sam
 
@@ -193,7 +170,7 @@ def segment_with_text(config: Dict, gd_model: GroundingDINOModel, sam: SamPredic
         index = np.argmax(scores)
         result_masks.append(masks[index])
 
-    detections.mask = np.array(result_masks)
+    detections.mask = np.array(result_masks)    # list of masks, [(H, W), (H, W), ...)]
 
     h, w = image.shape[:2]
     if min_side > 0:

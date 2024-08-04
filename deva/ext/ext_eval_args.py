@@ -3,6 +3,7 @@ from argparse import ArgumentParser
 
 
 def add_ext_eval_args(parser: ArgumentParser):
+    # Called in DEVA
 
     # Grounded Segment Anything
     parser.add_argument('--GROUNDING_DINO_CONFIG_PATH',
@@ -17,6 +18,19 @@ def add_ext_eval_args(parser: ArgumentParser):
     # Segment Anything (SAM) models
     parser.add_argument('--SAM_ENCODER_VERSION', default='vit_h')
     parser.add_argument('--SAM_CHECKPOINT_PATH', default='./saves/sam_vit_h_4b8939.pth')
+
+    # Segment Anything (SAM_HQ) models
+    parser.add_argument('--SAM_ENCODER_VERSION_HQ', default='vit_h')
+    parser.add_argument('--SAM_CHECKPOINT_PATH_HQ', default='./saves/sam_vit_h_4b8939.pth')
+
+    # Segment Anything (SAM_HQ_Tiny) models
+    parser.add_argument('--SAM_ENCODER_VERSION_HQ_Tiny', default='vit_h')
+    parser.add_argument('--SAM_CHECKPOINT_PATH_HQ_Tiny', default='./saves/sam_vit_h_4b8939.pth')
+
+    # Segment Anything (SAM_FAST) models
+    parser.add_argument('--SAM_ENCODER_VERSION_FAST', default='vit_h')
+    parser.add_argument('--SAM_CHECKPOINT_PATH_FAST', default='./saves/sam_vit_h_4b8939.pth')
+
 
     # Mobile SAM
     parser.add_argument('--MOBILE_SAM_CHECKPOINT_PATH', default='./saves/mobile_sam.pt')
@@ -41,6 +55,8 @@ def add_ext_eval_args(parser: ArgumentParser):
 
 
 def add_text_default_args(parser):
+    # Called in DEVA
+
     parser.add_argument('--img_path', default='./example/vipseg')
     parser.add_argument('--detection_every', type=int, default=5)
     parser.add_argument('--num_voting_frames',
@@ -55,7 +71,11 @@ def add_text_default_args(parser):
                         type=int,
                         help='Max. num of objects to keep in memory. -1 for no limit')
     parser.add_argument('--prompt', type=str, help='Separate classes with a single fullstop')
-    parser.add_argument('--sam_variant', default='original', help='mobile/original')
+    
+    # Support Multiple SAM variants
+    parser.add_argument('--sam_variant', default='original', 
+                        choices=["mobile", "original", "HQ", "HQ_Tiny", "FAST"], 
+                        help='mobile/original/HQ/HQ_Tiny/FAST')
     return parser
 
 
